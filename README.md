@@ -1,141 +1,84 @@
-✅ README.md (Ready for GitHub)
+# URL Shortener
 
-# URL Shortener – WordPress Plugin
-Creates short, branded URLs for images, files, or any external link. Designed for fast redirect handling, clean admin management, and optional expiration dates. Perfect for QR codes, flyers, social links, and internal reference URLs.
+WordPress plugin that combines two tools into one admin screen:
 
-**Author:** Jason Cox  
-**Version:** 1.3.2  
-**License:** GPL-2.0+
+- `URL Shortener`: create branded short links such as `/go/example`
+- `Static QR Redirect`: manage fixed QR routes such as `/qr`, `/qr2`, `/qr3`, and `/qr4`
 
----
+Both features are managed from the same plugin page with tabs.
+
+## Requirements
+
+- WordPress: `5.8+`
+- Tested up to: `6.6`
+- PHP: `7.4+`
+
+## Files
+
+- `URLShortner.php`: main plugin bootstrap, admin screen, URL shortener logic
+- `StaticQRRedirect.php`: internal module for the Static QR Redirect tab
 
 ## Features
 
-### 🔗 Short URL Generator
-- Create fully branded short URLs like:
+- Create short URLs for any valid `http` or `https` destination
+- Support multiple base paths such as `go`, `img`, or `pdf`
+- Enable or disable short links
+- Optional expiration dates for short links
+- Track hits for shortened URLs
+- Show QR previews for generated short URLs
+- Manage four fixed QR routes from a separate tab
+- Track scans for each static QR route
 
-https://example.com/go/slug
+## Admin Tabs
 
-- Automatic or custom slugs.
-- Multiple base paths (e.g., `/go/`, `/pdf/`, `/promo/`).
+After activation, open `URL Shortener` in the WordPress admin menu.
 
-### 🧭 Redirect Handling
-- Fast server-side redirect using `template_redirect`.
-- Hit counter increments on every visit.
-- Proper 404 handling for missing or expired links.
+Tabs:
 
-### ⏱ Expiration Options
-- Optional expiration date/time.
-- Auto-disables expired links.
-- “Leave blank for Never” behavior.
+- `URL Shortener`: create and manage short links
+- `Static QR Redirect`: manage fixed QR destinations and QR downloads
 
-### 🧹 Clean Admin Interface
-- Complete management table for all short URLs.
-- Enable/disable toggle.
-- Edit expiration date.
-- Delete link instantly.
-- QR code preview generated automatically.
+## Short URL Behavior
 
-### 📐 Visual Enhancements
-- Fixed-width expiration input field.
-- Clean layout across all admin columns.
-- QR images aligned and non-overlapping.
+Short URLs are built like this:
 
-### 🧱 Database Design
-Table: `{prefix}_image_shortener`
+```text
+https://your-site.com/{base-path}/{slug}
+```
 
-Columns:
-- `id`
-- `slug`
-- `original_url`
-- `base_path`
-- `is_active`
-- `expires_at`
-- `hits`
-- `created_at`
+Example:
+
+```text
+https://your-site.com/go/summer-sale
+```
+
+## Static QR Routes
+
+The plugin reserves these fixed routes:
+
+- `/qr`
+- `/qr2`
+- `/qr3`
+- `/qr4`
+
+Each route can be pointed at a different destination URL from the `Static QR Redirect` tab.
+
+This is useful when you want to print a QR code once and change its destination later without reprinting it.
 
 ## Installation
 
-1. Upload the plugin folder to  
- `/wp-content/plugins/url-shortener/`
+1. Place the plugin folder in your WordPress plugins directory.
+2. Make sure both files stay together in the same folder:
+   `URLShortner.php` and `StaticQRRedirect.php`
+3. Activate `URL Shortener` from the WordPress Plugins screen.
+4. Visit `Settings > Permalinks` and click `Save` once after activation.
 
-2. Activate via **Plugins → Installed Plugins**.
+## Notes
 
-3. Go to **URL Shortener** in the WordPress admin menu.
+- Pretty permalinks are recommended.
+- If pretty permalinks are disabled, the static QR feature falls back to query-string URLs.
+- QR images in the shortener list are proxied through WordPress admin AJAX.
 
----
+## Version
 
-## How to Use
-
-### **Create a Short URL**
-1. Go to **URL Shortener → Create Short URL**.
-2. Enter the original URL.
-3. Choose a custom slug (optional).
-4. Select a base path (e.g., `/go/`).
-5. Choose Active/Inactive.
-6. Optionally add an expiration date.
-7. Save.
-
-### **Manage Existing Short URLs**
-You can:
-- Copy/visit the short link
-- Disable/enable
-- Edit expiration
-- Clear expiration
-- View hits
-- Delete the URL
-
----
-
-## Rewrite Rules
-Base paths automatically generate rewrite rules, such as:
-
-^go/([^/]+)/?$
-
-These map to a query var `ius_slug`, which triggers redirect handling.
-
-Rewrite rules flush on:
-- Plugin activation
-- Base path updates
-
----
-
-## QR Code Generation
-QR codes are generated using:
-
-https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={short_url}
-
-Each row displays a compact QR preview.
-
----
-
-## Security Notes
-- All admin actions require valid WordPress nonces.
-- Only admins with `manage_options` can create/delete/modify URLs.
-- Redirects use `esc_url_raw` for safe forwarding.
-- Reserved slug list protects system paths.
-
----
-
-## Minimum Requirements
-- WordPress 5.8+
-- PHP 7.4+
-- Rewrite rules enabled
-
----
-
-## License
-This plugin is licensed under the GNU GPL v2.0 or later.  
-See: https://www.gnu.org/licenses/gpl-2.0.html
-
----
-
-## Contributing
-Pull requests and suggestions are welcome.  
-Please include detailed information about feature requests.
-
----
-
-## Maintainer
-**Jason Cox**  
-GitHub: https://github.com/jcjason12108-alt
+Current merged plugin version: `1.4.0`
