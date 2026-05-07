@@ -1,18 +1,44 @@
 <?php
 /**
  * Plugin Name: URL Shortener
- * Plugin URI: https://github.com/jcjason12108-alt
+ * Plugin URI: https://github.com/jcjason12108-alt/URLShortener/
  * Description: Creates short branded URLs and static QR redirects from one tabbed admin screen. GitHub: https://github.com/jcjason12108-alt
- * Version: 1.4.0
+ * Version: 1.4.1
  * Author: Jason Cox
  * Requires at least: 5.8
- * Tested up to: 6.6
+ * Tested up to: 6.9.4
  * Requires PHP: 7.4
+ * License: GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: urlshortener
  */
 
 if (!defined('ABSPATH')) exit;
 
+require_once __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 require_once __DIR__ . '/StaticQRRedirect.php';
+
+$ius_update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+    'https://github.com/jcjason12108-alt/URLShortener/',
+    __FILE__,
+    'URLShortener'
+);
+$ius_update_checker->setBranch('main');
+
+add_filter(
+    $ius_update_checker->getUniqueName('vcs_update_detection_strategies'),
+    static function (array $strategies): array {
+        return isset($strategies['branch']) ? ['branch' => $strategies['branch']] : $strategies;
+    }
+);
+
+$ius_github_token = defined('PLUGIN_UPDATE_GITHUB_TOKEN')
+    ? PLUGIN_UPDATE_GITHUB_TOKEN
+    : getenv('PLUGIN_UPDATE_GITHUB_TOKEN');
+
+if (!empty($ius_github_token)) {
+    $ius_update_checker->setAuthentication($ius_github_token);
+}
 
 global $ius_table;
 $ius_table = $GLOBALS['wpdb']->prefix . "image_shortener";

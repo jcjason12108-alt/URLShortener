@@ -5,6 +5,18 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [1.4.1] - 2026-05-06
+### Added
+- Plugin Update Checker 5.6 vendored under `plugin-update-checker/`.
+- GitHub branch-based automatic update checks for the `main` branch.
+- Optional `PLUGIN_UPDATE_GITHUB_TOKEN` support for private GitHub access.
+- WordPress `readme.txt` metadata for update and compatibility checks.
+
+### Changed
+- Updated plugin compatibility metadata to `Tested up to: 6.9.4`.
+
+---
+
 ## [1.4.0] - 2026-04-08
 ### Added
 - Static QR Redirect module with fixed routes for `/qr`, `/qr2`, `/qr3`, and `/qr4`.
