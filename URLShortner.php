@@ -13,35 +13,40 @@
  * Text Domain: urlshortener
  */
 
-if (!defined('ABSPATH')) exit;
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 require_once __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 require_once __DIR__ . '/StaticQRRedirect.php';
 
-$ius_update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
-    'https://github.com/jcjason12108-alt/URLShortener/',
-    __FILE__,
-    'URLShortener'
-);
-$ius_update_checker->setBranch('main');
+function ius_register_update_checker() {
+    $update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+        'https://github.com/jcjason12108-alt/URLShortener/',
+        __FILE__,
+        'URLShortener'
+    );
+    $update_checker->setBranch('main');
 
-add_filter(
-    $ius_update_checker->getUniqueName('vcs_update_detection_strategies'),
-    static function (array $strategies): array {
-        return isset($strategies['branch']) ? ['branch' => $strategies['branch']] : $strategies;
+    add_filter(
+        $update_checker->getUniqueName('vcs_update_detection_strategies'),
+        static function (array $strategies): array {
+            return isset($strategies['branch']) ? ['branch' => $strategies['branch']] : $strategies;
+        }
+    );
+
+    $github_token = defined('PLUGIN_UPDATE_GITHUB_TOKEN')
+        ? PLUGIN_UPDATE_GITHUB_TOKEN
+        : getenv('PLUGIN_UPDATE_GITHUB_TOKEN');
+
+    if (!empty($github_token)) {
+        $update_checker->setAuthentication($github_token);
     }
-);
-
-$ius_github_token = defined('PLUGIN_UPDATE_GITHUB_TOKEN')
-    ? PLUGIN_UPDATE_GITHUB_TOKEN
-    : getenv('PLUGIN_UPDATE_GITHUB_TOKEN');
-
-if (!empty($ius_github_token)) {
-    $ius_update_checker->setAuthentication($ius_github_token);
 }
+ius_register_update_checker();
 
 global $ius_table;
-$ius_table = $GLOBALS['wpdb']->prefix . "image_shortener";
+$ius_table = $GLOBALS['wpdb']->prefix . 'image_shortener';
 $ius_static_qr = new Static_QR_Redirect();
 $ius_static_qr->register_hooks();
 /**
@@ -101,13 +106,19 @@ function ius_get_all_base_paths() {
     if (is_string($stored)) {
         $stored = preg_split('/\r\n|\r|\n/', $stored);
     }
-    if (!is_array($stored)) $stored = [];
+
+    if (!is_array($stored)) {
+        $stored = [];
+    }
 
     $paths = [];
     foreach ($stored as $path) {
         $path = trim((string) $path, "/\t\n\r\0\x0B");
         $path = sanitize_title($path);
-        if ($path !== '') $paths[] = $path;
+
+        if ($path !== '') {
+            $paths[] = $path;
+        }
     }
 
     $paths = array_values(array_unique($paths));
@@ -116,7 +127,11 @@ function ius_get_all_base_paths() {
         $legacy = get_option('ius_base_path', 'go');
         $legacy = trim($legacy, "/\t\n\r\0\x0B");
         $legacy = sanitize_title($legacy);
-        if ($legacy === '') $legacy = 'go';
+
+        if ($legacy === '') {
+            $legacy = 'go';
+        }
+
         $paths = [$legacy];
     }
 
@@ -132,13 +147,15 @@ function ius_get_base_path() {
  * Build short URL — no custom domain support.
  */
 function ius_build_short_url($base_path, $slug) {
-    $base_path = trim((string) $base_path, "/");
+    $base_path = trim((string) $base_path, '/');
     if ($base_path === '') {
         $base_path = ius_get_base_path();
     }
 
-    $slug = trim($slug, "/");
-    if ($slug === '') return '';
+    $slug = trim($slug, '/');
+    if ($slug === '') {
+        return '';
+    }
 
     $domain = rtrim(home_url(), '/');
     return $domain . '/' . $base_path . '/' . $slug;
@@ -159,18 +176,28 @@ function ius_validate_destination_url($url) {
 }
 
 function ius_row_is_expired($row) {
-    if (empty($row->expires_at)) return false;
+    if (empty($row->expires_at)) {
+        return false;
+    }
 
     $timestamp = strtotime($row->expires_at . ' UTC');
-    if ($timestamp === false) return false;
+    if ($timestamp === false) {
+        return false;
+    }
 
     return time() >= $timestamp;
 }
 
 function ius_format_datetime_local($datetime) {
-    if (!$datetime) return '';
+    if (!$datetime) {
+        return '';
+    }
+
     $timestamp = strtotime($datetime . ' UTC');
-    if ($timestamp === false) return '';
+    if ($timestamp === false) {
+        return '';
+    }
+
     return gmdate('Y-m-d\TH:i', $timestamp);
 }
 
@@ -178,7 +205,7 @@ function ius_is_reserved_slug($slug) {
     $slug = sanitize_title($slug);
     $reserved = [
         'wp-admin', 'wp-login', 'login', 'admin', 'feed', 'json',
-        'api', 'page', 'attachment', 'go', 'img'
+        'api', 'page', 'attachment', 'go', 'img',
     ];
     $reserved = apply_filters('ius_reserved_slugs', $reserved);
     return in_array($slug, $reserved, true);
@@ -222,7 +249,9 @@ function ius_maybe_upgrade_schema() {
     global $wpdb, $ius_table;
 
     $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $ius_table));
-    if (!$table_exists) return;
+    if (!$table_exists) {
+        return;
+    }
 
     $default_base = ius_get_base_path();
     $wpdb->query(
@@ -272,7 +301,7 @@ function ius_admin_page() {
         $current_tab = 'shortener';
     }
     $base_page = menu_page_url('image-url-shortener', false);
-?>
+    ?>
     <div class="wrap">
 
     <!-- VISUAL FIXES -->
@@ -315,9 +344,15 @@ function ius_admin_page() {
             foreach ($lines as $line) {
                 $value = trim($line, "/\t\n\r\0\x0B");
                 $value = sanitize_title($value);
-                if ($value !== '') $new_paths[] = $value;
+
+                if ($value !== '') {
+                    $new_paths[] = $value;
+                }
             }
-            if (empty($new_paths)) $new_paths = ['go'];
+
+            if (empty($new_paths)) {
+                $new_paths = ['go'];
+            }
 
             update_option('ius_base_paths', $new_paths);
 
@@ -396,7 +431,7 @@ function ius_admin_page() {
                         'original_url' => $original,
                         'base_path'    => $selected_base,
                         'is_active'    => $is_active,
-                        'expires_at'   => $expires_at
+                        'expires_at'   => $expires_at,
                     ]);
 
                     $short_url = ius_build_short_url($selected_base, $slug);
@@ -565,9 +600,13 @@ function ius_admin_page() {
     $short_url = ius_build_short_url($row_base, $r->slug);
     $expired   = ius_row_is_expired($r);
 
-    if (!$r->is_active)    $status_label = 'Inactive';
-    elseif ($expired)      $status_label = 'Expired';
-    else                   $status_label = 'Active';
+    if (!$r->is_active) {
+        $status_label = 'Inactive';
+    } elseif ($expired) {
+        $status_label = 'Expired';
+    } else {
+        $status_label = 'Active';
+    }
 
     $expires_text = $r->expires_at
         ? get_date_from_gmt($r->expires_at, 'M j, Y H:i')
@@ -685,7 +724,9 @@ add_action('template_redirect', function () {
     global $wpdb, $ius_table;
 
     $slug = get_query_var('ius_slug');
-    if (!$slug) return;
+    if (!$slug) {
+        return;
+    }
 
     $row = $wpdb->get_row(
         $wpdb->prepare("SELECT * FROM $ius_table WHERE slug = %s", $slug)
