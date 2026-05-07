@@ -5,6 +5,18 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [1.4.0] - 2026-04-08
+### Added
+- Static QR Redirect module with fixed routes for `/qr`, `/qr2`, `/qr3`, and `/qr4`.
+- Tabbed WordPress admin screen combining URL short links and static QR redirects.
+- QR scan tracking for each static QR route.
+
+### Changed
+- Plugin package now includes both `URLShortner.php` and `StaticQRRedirect.php`.
+- README updated to document the merged URL Shortener and Static QR Redirect plugin.
+
+---
+
 ## [1.3.2] – 2025-12-04
 ### Added
 - Full visual redesign of the Expiration column.
