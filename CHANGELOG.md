@@ -5,26 +5,6 @@ All notable changes to this project will be documented here.
 
 ---
 
-## [1.4.4] - 2026-05-07
-### Fixed
-- Added duplicate-plugin guards to avoid fatal activation errors when another copy is already loaded.
-
----
-
-## [1.4.3] - 2026-05-07
-### Fixed
-- Removed PHP 7-only syntax from the plugin files for older hosting environments.
-- Updated PHP compatibility metadata to `5.6.20+`.
-
----
-
-## [1.4.2] - 2026-05-07
-### Fixed
-- Renamed the Static QR Redirect class to avoid fatal class-name collisions with other plugins.
-- Made the bundled update checker optional so partial uploads do not trigger a fatal error.
-
----
-
 ## [1.4.1] - 2026-05-06
 ### Added
 - Plugin Update Checker 5.6 vendored under `plugin-update-checker/`.

@@ -5,11 +5,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-if (class_exists('IUS_Static_QR_Redirect', false)) {
-    return;
-}
-
-class IUS_Static_QR_Redirect {
+class Static_QR_Redirect {
     const OPTION_KEY = 'static_qr_redirect';
     const NONCE_KEY  = 'static_qr_redirect_nonce';
     const SLUG       = 'static-qr-redirect';
@@ -17,7 +13,7 @@ class IUS_Static_QR_Redirect {
     const OPTION_CLICKS = 'static_qr_redirect_clicks';
     const OPTION_SLOTS = 'static_qr_redirect_slots';
 
-    private function slots() {
+    private function slots() : array {
         return ['qr', 'qr2', 'qr3', 'qr4'];
     }
 
@@ -49,7 +45,7 @@ class IUS_Static_QR_Redirect {
             $legacy = get_option(self::OPTION_KEY, []);
             if (!empty($legacy)) {
                 $slots['qr'] = [
-                    'url' => isset($legacy['url']) ? $legacy['url'] : '',
+                    'url' => $legacy['url'] ?? '',
                     'active' => !empty($legacy['active']) ? 1 : 0,
                     'clicks' => (int) get_option(self::OPTION_CLICKS, 0),
                 ];
@@ -61,7 +57,7 @@ class IUS_Static_QR_Redirect {
             $slots[$slot] = ['url' => '', 'active' => 0, 'clicks' => 0];
         }
 
-        $dest = ius_validate_destination_url(isset($slots[$slot]['url']) ? $slots[$slot]['url'] : '');
+        $dest = ius_validate_destination_url($slots[$slot]['url'] ?? '');
         $active = !empty($slots[$slot]['active']);
         if (!$dest) {
             status_header(404);
@@ -74,7 +70,7 @@ class IUS_Static_QR_Redirect {
             wp_die('<h1>QR link is inactive</h1>', 'Gone', ['response' => 410]);
         }
 
-        $slots[$slot]['clicks'] = (int) (isset($slots[$slot]['clicks']) ? $slots[$slot]['clicks'] : 0) + 1;
+        $slots[$slot]['clicks'] = (int) ($slots[$slot]['clicks'] ?? 0) + 1;
         update_option(self::OPTION_SLOTS, $slots, false);
 
         nocache_headers();
@@ -95,7 +91,7 @@ class IUS_Static_QR_Redirect {
             $legacy = get_option(self::OPTION_KEY, []);
             if (!empty($legacy)) {
                 $slots['qr'] = [
-                    'url' => isset($legacy['url']) ? $legacy['url'] : '',
+                    'url' => $legacy['url'] ?? '',
                     'active' => !empty($legacy['active']) ? 1 : 0,
                     'clicks' => (int) get_option(self::OPTION_CLICKS, 0),
                 ];
@@ -116,10 +112,10 @@ class IUS_Static_QR_Redirect {
         <?php endif; ?>
 
         <?php foreach ($this->slots() as $slot):
-            $data = isset($slots[$slot]) ? $slots[$slot] : ['url' => '', 'active' => 0, 'clicks' => 0];
+            $data = $slots[$slot] ?? ['url' => '', 'active' => 0, 'clicks' => 0];
             $url = esc_attr($data['url']);
             $active = !empty($data['active']);
-            $clicks = (int) (isset($data['clicks']) ? $data['clicks'] : 0);
+            $clicks = (int) ($data['clicks'] ?? 0);
             $path = $slot;
             $qr_pretty = trailingslashit($base . $path);
             $qr_qs = add_query_arg('static_qr_slot', $slot, $base);
@@ -179,13 +175,13 @@ class IUS_Static_QR_Redirect {
 
         $slots = get_option(self::OPTION_SLOTS, []);
         $action = sanitize_text_field(wp_unslash($_POST['static_qr_action']));
-        $slot = sanitize_title(wp_unslash(isset($_POST['slot']) ? $_POST['slot'] : ''));
+        $slot = sanitize_title(wp_unslash($_POST['slot'] ?? ''));
 
         if ($slot && !in_array($slot, $this->slots(), true)) {
             add_settings_error(self::SLUG, 'invalid_slot', 'Invalid slot.', 'error');
         } else {
             if ($action === 'save_slot') {
-                $raw_url = wp_unslash(isset($_POST['url']) ? $_POST['url'] : '');
+                $raw_url = wp_unslash($_POST['url'] ?? '');
                 $url = $raw_url === '' ? '' : ius_validate_destination_url($raw_url);
                 $active = !empty($_POST['active']) ? 1 : 0;
                 if ($raw_url !== '' && !$url) {
