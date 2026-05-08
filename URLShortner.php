@@ -3,11 +3,11 @@
  * Plugin Name: URL Shortener
  * Plugin URI: https://github.com/jcjason12108-alt/URLShortener/
  * Description: Creates short branded URLs and static QR redirects from one tabbed admin screen. GitHub: https://github.com/jcjason12108-alt
- * Version: 1.4.1
+ * Version: 1.4.4
  * Author: Jason Cox
  * Requires at least: 5.8
  * Tested up to: 6.9.4
- * Requires PHP: 7.4
+ * Requires PHP: 5.6.20
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: urlshortener
@@ -17,10 +17,23 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
+if (function_exists('ius_get_all_base_paths') || class_exists('IUS_Static_QR_Redirect', false)) {
+    add_action('admin_notices', function () {
+        echo '<div class="notice notice-error"><p><strong>URL Shortener:</strong> Another copy of this plugin is already loaded. Deactivate and delete the old copy before activating this one.</p></div>';
+    });
+    return;
+}
+
+if (file_exists(__DIR__ . '/plugin-update-checker/plugin-update-checker.php')) {
+    require_once __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
+}
 require_once __DIR__ . '/StaticQRRedirect.php';
 
 function ius_register_update_checker() {
+    if (!class_exists('\YahnisElsts\PluginUpdateChecker\v5\PucFactory')) {
+        return;
+    }
+
     $update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
         'https://github.com/jcjason12108-alt/URLShortener/',
         __FILE__,
@@ -30,7 +43,7 @@ function ius_register_update_checker() {
 
     add_filter(
         $update_checker->getUniqueName('vcs_update_detection_strategies'),
-        static function (array $strategies): array {
+        static function (array $strategies) {
             return isset($strategies['branch']) ? ['branch' => $strategies['branch']] : $strategies;
         }
     );
@@ -47,7 +60,7 @@ ius_register_update_checker();
 
 global $ius_table;
 $ius_table = $GLOBALS['wpdb']->prefix . 'image_shortener';
-$ius_static_qr = new Static_QR_Redirect();
+$ius_static_qr = new IUS_Static_QR_Redirect();
 $ius_static_qr->register_hooks();
 /**
  * Serve proxied QR images for admin UI to avoid leaking short URLs to third-parties.
@@ -383,7 +396,7 @@ function ius_admin_page() {
 
         $raw_original = isset($_POST['original_url']) ? wp_unslash($_POST['original_url']) : '';
         $original     = ius_validate_destination_url($raw_original);
-        $slug         = sanitize_title(wp_unslash($_POST['slug'] ?? ''));
+        $slug         = sanitize_title(wp_unslash(isset($_POST['slug']) ? $_POST['slug'] : ''));
 
         $selected_base = isset($_POST['base_path_choice'])
             ? sanitize_title(wp_unslash($_POST['base_path_choice']))
@@ -445,8 +458,8 @@ function ius_admin_page() {
        TOGGLE ACTIVE
     ------------------------------ */
     if (isset($_POST['ius_toggle']) && check_admin_referer('ius_toggle_nonce')) {
-        $toggle_id  = absint(wp_unslash($_POST['toggle_id'] ?? 0));
-        $new_status = absint(wp_unslash($_POST['new_status'] ?? 0));
+        $toggle_id  = absint(wp_unslash(isset($_POST['toggle_id']) ? $_POST['toggle_id'] : 0));
+        $new_status = absint(wp_unslash(isset($_POST['new_status']) ? $_POST['new_status'] : 0));
 
         $wpdb->update($ius_table, ['is_active' => $new_status ? 1 : 0], ['id' => $toggle_id]);
         echo '<div class="updated"><p>Status updated.</p></div>';
@@ -456,7 +469,7 @@ function ius_admin_page() {
        UPDATE EXPIRATION
     ------------------------------ */
     if (isset($_POST['ius_update_expiration']) && check_admin_referer('ius_expire_nonce')) {
-        $expire_id  = absint(wp_unslash($_POST['expire_id'] ?? 0));
+        $expire_id  = absint(wp_unslash(isset($_POST['expire_id']) ? $_POST['expire_id'] : 0));
         $expires_at = null;
 
         if (!empty($_POST['expires_at'])) {
@@ -474,7 +487,7 @@ function ius_admin_page() {
        CLEAR EXPIRATION
     ------------------------------ */
     if (isset($_POST['ius_clear_expiration']) && check_admin_referer('ius_expire_nonce')) {
-        $expire_id = absint(wp_unslash($_POST['expire_id'] ?? 0));
+        $expire_id = absint(wp_unslash(isset($_POST['expire_id']) ? $_POST['expire_id'] : 0));
         $wpdb->update($ius_table, ['expires_at' => null], ['id' => $expire_id]);
         echo '<div class="updated"><p>Expiration cleared.</p></div>';
     }
@@ -483,7 +496,7 @@ function ius_admin_page() {
        DELETE URL
     ------------------------------ */
     if (isset($_POST['ius_delete']) && check_admin_referer('ius_delete_nonce')) {
-        $id = absint(wp_unslash($_POST['delete_id'] ?? 0));
+        $id = absint(wp_unslash(isset($_POST['delete_id']) ? $_POST['delete_id'] : 0));
         $wpdb->delete($ius_table, ['id' => $id]);
         echo '<div class="updated"><p>Short URL deleted.</p></div>';
     }
