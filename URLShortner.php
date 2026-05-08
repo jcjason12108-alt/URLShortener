@@ -45,7 +45,7 @@ function ius_register_update_checker() {
 }
 ius_register_update_checker();
 
-global $ius_table;
+global $ius_table, $ius_static_qr;
 $ius_table = $GLOBALS['wpdb']->prefix . 'image_shortener';
 $ius_static_qr = new Static_QR_Redirect();
 $ius_static_qr->register_hooks();
