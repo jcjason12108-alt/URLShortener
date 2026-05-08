@@ -11,7 +11,7 @@ Both features are managed from the same plugin page with tabs.
 
 - WordPress: `5.8+`
 - Tested up to: `6.9.4`
-- PHP: `5.6.20+`
+- PHP: `7.4+`
 
 ## Files
 
@@ -81,4 +81,4 @@ This is useful when you want to print a QR code once and change its destination 
 
 ## Version
 
-Current merged plugin version: `1.4.4`
+Current merged plugin version: `1.4.1`

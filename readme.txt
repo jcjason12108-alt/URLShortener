@@ -3,8 +3,8 @@ Contributors: jcjason12108-alt
 Tags: url shortener, qr code, redirects
 Requires at least: 5.8
 Tested up to: 6.9.4
-Requires PHP: 5.6.20
-Stable tag: 1.4.4
+Requires PHP: 7.4
+Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,17 +23,6 @@ The Static QR Redirect tab manages fixed QR routes for `/qr`, `/qr2`, `/qr3`, an
 3. Visit `Settings > Permalinks` and click `Save` once after activation.
 
 == Changelog ==
-
-= 1.4.4 =
-* Added duplicate-plugin guards to avoid fatal activation errors when another copy is already loaded.
-
-= 1.4.3 =
-* Removed PHP 7-only syntax from the plugin files for older hosting environments.
-* Updated PHP compatibility metadata to `5.6.20+`.
-
-= 1.4.2 =
-* Renamed the Static QR Redirect class to avoid fatal class-name collisions with other plugins.
-* Made the bundled update checker optional so partial uploads do not trigger a fatal error.
 
 = 1.4.1 =
 * Added Plugin Update Checker for GitHub branch-based automatic updates.
