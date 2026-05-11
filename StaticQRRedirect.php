@@ -12,9 +12,43 @@ class Static_QR_Redirect {
     const BASE_PATH  = 'qr';
     const OPTION_CLICKS = 'static_qr_redirect_clicks';
     const OPTION_SLOTS = 'static_qr_redirect_slots';
+    const OPTION_SLOT_CLICKS_PREFIX = 'static_qr_redirect_clicks_';
 
     private function slots() : array {
         return ['qr', 'qr2', 'qr3', 'qr4'];
+    }
+
+    private function clicks_option_name($slot) : string {
+        return self::OPTION_SLOT_CLICKS_PREFIX . sanitize_key($slot);
+    }
+
+    private function get_clicks($slot, array $slots) : int {
+        $clicks = get_option($this->clicks_option_name($slot), null);
+
+        if ($clicks === null) {
+            return (int) ($slots[$slot]['clicks'] ?? 0);
+        }
+
+        return (int) $clicks;
+    }
+
+    private function increment_clicks($slot, array $slots) {
+        global $wpdb;
+
+        $option_name = $this->clicks_option_name($slot);
+        $initial_clicks = (int) ($slots[$slot]['clicks'] ?? 0);
+        add_option($option_name, $initial_clicks, '', false);
+
+        $updated = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$wpdb->options} SET option_value = CAST(option_value AS UNSIGNED) + 1 WHERE option_name = %s",
+                $option_name
+            )
+        );
+
+        if ($updated === false) {
+            update_option($option_name, (int) get_option($option_name, 0) + 1, false);
+        }
     }
 
     public function register_hooks() {
@@ -70,8 +104,7 @@ class Static_QR_Redirect {
             wp_die('<h1>QR link is inactive</h1>', 'Gone', ['response' => 410]);
         }
 
-        $slots[$slot]['clicks'] = (int) ($slots[$slot]['clicks'] ?? 0) + 1;
-        update_option(self::OPTION_SLOTS, $slots, false);
+        $this->increment_clicks($slot, $slots);
 
         nocache_headers();
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -102,7 +135,7 @@ class Static_QR_Redirect {
         $base = home_url('/');
         ?>
         <h2>Static QR Redirect</h2>
-        <p><a href="https://github.com/jcjason12108-alt/Dynamic-QR-Redirects" target="_blank" rel="noopener noreferrer">GitHub Repository</a></p>
+        <p><a href="https://github.com/jcjason12108-alt/URLShortener/" target="_blank" rel="noopener noreferrer">GitHub Repository</a></p>
         <p>Manage up to four fixed QR routes. Print each once and change the destination anytime.</p>
 
         <?php if (!$pretty): ?>
@@ -115,7 +148,7 @@ class Static_QR_Redirect {
             $data = $slots[$slot] ?? ['url' => '', 'active' => 0, 'clicks' => 0];
             $url = esc_attr($data['url']);
             $active = !empty($data['active']);
-            $clicks = (int) ($data['clicks'] ?? 0);
+            $clicks = $this->get_clicks($slot, $slots);
             $path = $slot;
             $qr_pretty = trailingslashit($base . $path);
             $qr_qs = add_query_arg('static_qr_slot', $slot, $base);
@@ -150,7 +183,7 @@ class Static_QR_Redirect {
             </div>
             <div style="flex:1;min-width:220px">
                 <strong>Stats</strong>
-                <p style="margin-top:6px;"><strong>Total scans:</strong> <?php echo number_format_i18n($clicks); ?></p>
+                <p style="margin-top:6px;"><strong>Total scans:</strong> <?php echo esc_html(number_format_i18n($clicks)); ?></p>
                 <form method="post" action="" style="margin-bottom:6px;">
                     <?php wp_nonce_field(self::NONCE_KEY, self::NONCE_KEY); ?>
                     <input type="hidden" name="static_qr_action" value="reset_clicks_slot">
@@ -169,7 +202,11 @@ class Static_QR_Redirect {
     public function maybe_handle_post() {
         if (!is_admin() || !current_user_can('manage_options')) return;
         if (empty($_POST['static_qr_action'])) return;
-        if (!isset($_POST[self::NONCE_KEY]) || !wp_verify_nonce($_POST[self::NONCE_KEY], self::NONCE_KEY)) {
+        $nonce = isset($_POST[self::NONCE_KEY])
+            ? sanitize_text_field(wp_unslash($_POST[self::NONCE_KEY]))
+            : '';
+
+        if (!$nonce || !wp_verify_nonce($nonce, self::NONCE_KEY)) {
             wp_die('Security check failed.');
         }
 
@@ -197,6 +234,7 @@ class Static_QR_Redirect {
                 if (!isset($slots[$slot])) $slots[$slot] = ['url' => '', 'active' => 0, 'clicks' => 0];
                 $slots[$slot]['clicks'] = 0;
                 update_option(self::OPTION_SLOTS, $slots, false);
+                update_option($this->clicks_option_name($slot), 0, false);
                 add_settings_error(self::SLUG, 'reset', strtoupper($slot) . ' click count reset.', 'updated');
             }
         }

@@ -4,7 +4,7 @@ Tags: url shortener, qr code, redirects
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.4
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,12 @@ The Static QR Redirect tab manages fixed QR routes for `/qr`, `/qr2`, `/qr3`, an
 3. Visit `Settings > Permalinks` and click `Save` once after activation.
 
 == Changelog ==
+
+= 1.4.2 =
+* Added nonce verification to the admin QR proxy endpoint.
+* Added insert failure handling when creating short URLs.
+* Improved Static QR scan counting to avoid lost updates under concurrent traffic.
+* Escaped remaining computed admin output.
 
 = 1.4.1 =
 * Added Plugin Update Checker for GitHub branch-based automatic updates.

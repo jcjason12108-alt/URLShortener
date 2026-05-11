@@ -15,7 +15,8 @@ Both features are managed from the same plugin page with tabs.
 
 ## Files
 
-- `URLShortner.php`: main plugin bootstrap, admin screen, URL shortener logic
+- `URLShortener.php`: main plugin bootstrap, admin screen, URL shortener logic
+- `URLShortner.php`: compatibility loader for installs activated under the previous filename
 - `StaticQRRedirect.php`: internal module for the Static QR Redirect tab
 
 ## Features
@@ -69,7 +70,7 @@ This is useful when you want to print a QR code once and change its destination 
 
 1. Place the plugin folder in your WordPress plugins directory.
 2. Make sure both files stay together in the same folder:
-   `URLShortner.php` and `StaticQRRedirect.php`
+   `URLShortener.php`, `URLShortner.php`, and `StaticQRRedirect.php`
 3. Activate `URL Shortener` from the WordPress Plugins screen.
 4. Visit `Settings > Permalinks` and click `Save` once after activation.
 
@@ -81,4 +82,4 @@ This is useful when you want to print a QR code once and change its destination 
 
 ## Version
 
-Current merged plugin version: `1.4.1`
+Current merged plugin version: `1.4.2`

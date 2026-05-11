@@ -5,6 +5,22 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [1.4.2] - 2026-05-11
+### Changed
+- Renamed the main plugin file from `URLShortner.php` to `URLShortener.php`.
+- Updated hardcoded GitHub links to point at the `URLShortener` repository.
+- Static QR scan counting now uses per-slot counters updated with atomic database increments.
+
+### Added
+- Compatibility loader at the old filename so active installations can migrate to the corrected plugin basename.
+- Nonce verification for the admin QR proxy endpoint.
+
+### Fixed
+- Short URL creation now reports failure when the database insert fails.
+- Escaped remaining computed admin output.
+
+---
+
 ## [1.4.1] - 2026-05-06
 ### Added
 - Plugin Update Checker 5.6 vendored under `plugin-update-checker/`.
