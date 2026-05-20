@@ -3,10 +3,10 @@
  * Plugin Name: URL Shortener
  * Plugin URI: https://github.com/jcjason12108-alt/URLShortener/
  * Description: Creates short branded URLs and static QR redirects from one tabbed admin screen. GitHub: https://github.com/jcjason12108-alt
- * Version: 1.4.3
+ * Version: 1.4.2
  * Author: Jason Cox
  * Requires at least: 5.8
- * Tested up to: 7.0
+ * Tested up to: 6.9.4
  * Requires PHP: 7.4
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -298,7 +298,7 @@ function ius_admin_page() {
     $base_paths      = ius_get_all_base_paths();
     $base_path       = $base_paths[0];
     $base_paths_text = implode("\n", $base_paths);
-    $current_tab     = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : 'shortener';
+    $current_tab     = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'shortener';
     if (!in_array($current_tab, ['shortener', 'static_qr'], true)) {
         $current_tab = 'shortener';
     }
@@ -626,7 +626,7 @@ function ius_admin_page() {
 
                 <td>
                     <?php if ($short_url): ?>
-                        <a href="<?php echo esc_url($short_url); ?>" target="_blank" rel="noopener noreferrer">
+                        <a href="<?php echo esc_url($short_url); ?>" target="_blank">
                             <?php echo esc_html($short_url); ?>
                         </a>
                     <?php endif; ?>
@@ -640,7 +640,7 @@ function ius_admin_page() {
                         <input type="hidden" name="ius_toggle" value="1">
                         <input type="hidden" name="toggle_id" value="<?php echo esc_attr($r->id); ?>">
                         <input type="hidden" name="new_status" value="<?php echo esc_attr($r->is_active ? 0 : 1); ?>">
-                        <button class="button button-small"><?php echo esc_html($r->is_active ? 'Disable' : 'Enable'); ?></button>
+                        <button class="button button-small"><?php echo $r->is_active ? 'Disable' : 'Enable'; ?></button>
                     </form>
                 </td>
 
@@ -683,7 +683,7 @@ function ius_admin_page() {
                             ],
                             admin_url('admin-ajax.php')
                         );
-                        echo '<img src="' . esc_url($qr_src) . '" alt="QR code for ' . esc_attr($short_url) . '" style="max-width:80px;height:auto;display:block;margin:0 auto;" />';
+                        echo '<img src="' . esc_url($qr_src) . '" style="max-width:80px;height:auto;display:block;margin:0 auto;" />';
                     }
                     ?>
                 </td>
@@ -736,7 +736,7 @@ add_filter('query_vars', function ($vars) {
 add_action('template_redirect', function () {
     global $wpdb, $ius_table;
 
-    $slug = sanitize_title(get_query_var('ius_slug'));
+    $slug = get_query_var('ius_slug');
     if (!$slug) {
         return;
     }

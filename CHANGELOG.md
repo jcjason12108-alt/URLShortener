@@ -5,6 +5,16 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [1.4.3] - 2026-05-20
+### Changed
+- Updated WordPress compatibility metadata to `Tested up to: 7.0`.
+- Confirmed PHP 7.4 minimum compatibility for WordPress 7.0.
+
+### Fixed
+- Hardened admin request handling and output escaping.
+
+---
+
 ## [1.4.2] - 2026-05-11
 ### Changed
 - Renamed the main plugin file from `URLShortner.php` to `URLShortener.php`.
