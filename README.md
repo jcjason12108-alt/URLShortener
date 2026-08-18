@@ -82,4 +82,4 @@ This is useful when you want to print a QR code once and change its destination 
 
 ## Version
 
-Current merged plugin version: `1.4.3`
+Current plugin version: `1.4.4`

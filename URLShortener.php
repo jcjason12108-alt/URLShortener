@@ -3,7 +3,7 @@
  * Plugin Name: URL Shortener
  * Plugin URI: https://github.com/jcjason12108-alt/URLShortener/
  * Description: Creates short branded URLs and static QR redirects from one tabbed admin screen. GitHub: https://github.com/jcjason12108-alt
- * Version: 1.4.3
+ * Version: 1.4.4
  * Author: Jason Cox
  * Requires at least: 5.8
  * Tested up to: 7.0
@@ -292,7 +292,7 @@ function ius_admin_page() {
     global $wpdb, $ius_table;
 
     if (!current_user_can('manage_options')) {
-        wp_die(__('You do not have permission to access this page.'));
+        wp_die(esc_html__('You do not have permission to access this page.', 'urlshortener'));
     }
 
     $base_paths      = ius_get_all_base_paths();

@@ -5,7 +5,7 @@
  * The plugin's main file is URLShortener.php. This file intentionally has no
  * WordPress plugin header so it does not appear as a duplicate plugin.
  *
- * Version: 1.4.3
+ * Version: 1.4.4
  */
 
 if (!defined('ABSPATH')) {

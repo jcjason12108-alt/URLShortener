@@ -5,6 +5,16 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [1.4.4] - 2026-08-17
+### Changed
+- Updated the bundled Plugin Update Checker library from 5.6 to 5.7.
+- Removed a tracked backup copy of the main plugin source.
+
+### Fixed
+- Tightened escaping for the admin permission error message.
+
+---
+
 ## [1.4.3] - 2026-05-20
 ### Changed
 - Updated WordPress compatibility metadata to `Tested up to: 7.0`.

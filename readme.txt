@@ -4,7 +4,7 @@ Tags: url shortener, qr code, redirects
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.4.3
+Stable tag: 1.4.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,10 @@ The Static QR Redirect tab manages fixed QR routes for `/qr`, `/qr2`, `/qr3`, an
 3. Visit `Settings > Permalinks` and click `Save` once after activation.
 
 == Changelog ==
+
+= 1.4.4 =
+* Updated the bundled Plugin Update Checker library from 5.6 to 5.7.
+* Removed a tracked backup source file and tightened an admin permission error message.
 
 = 1.4.3 =
 * Updated WordPress compatibility metadata to `Tested up to: 7.0`.
