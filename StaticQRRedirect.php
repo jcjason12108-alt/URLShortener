@@ -68,11 +68,20 @@ class Static_QR_Redirect {
 
     public function maybe_do_redirect() {
         $slot = get_query_var('static_qr_slot');
+        if (!is_string($slot)) {
+            wp_die('Invalid QR link.', 'Bad Request', ['response' => 400]);
+        }
         if (!$slot) {
             $is_static = get_query_var('static_qr_redirect');
+            if (!is_string($is_static)) {
+                wp_die('Invalid QR link.', 'Bad Request', ['response' => 400]);
+            }
             if ($is_static) $slot = 'qr';
         }
         if (!$slot) return;
+        if (!in_array($slot, $this->slots(), true)) {
+            wp_die('QR link not found.', 'Not Found', ['response' => 404]);
+        }
 
         $slots = get_option(self::OPTION_SLOTS, []);
         if (empty($slots['qr'])) {
@@ -177,9 +186,9 @@ class Static_QR_Redirect {
             <div style="width:220px;text-align:center">
                 <strong>QR Preview</strong>
                 <div style="margin-top:6px">
-                    <img src="<?php echo esc_url('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . rawurlencode($qr_link)); ?>" alt="QR <?php echo esc_attr($slot); ?>" width="200" height="200" />
+                    <canvas class="ius-qr-preview" data-ius-qr-url="<?php echo esc_attr($qr_link); ?>" width="200" height="200" role="img" aria-label="QR <?php echo esc_attr($slot); ?>"></canvas>
                 </div>
-                <p><a class="button button-small" href="<?php echo esc_url('https://api.qrserver.com/v1/create-qr-code/?size=800x800&data=' . rawurlencode($qr_link)); ?>" download="static-<?php echo esc_attr($slot); ?>.png">Download PNG</a></p>
+                <p><a class="button button-small ius-qr-download" href="#" data-ius-qr-url="<?php echo esc_attr($qr_link); ?>" data-ius-qr-filename="static-<?php echo esc_attr($slot); ?>.png">Download PNG</a></p>
             </div>
             <div style="flex:1;min-width:220px">
                 <strong>Stats</strong>
@@ -212,9 +221,10 @@ class Static_QR_Redirect {
 
         $slots = get_option(self::OPTION_SLOTS, []);
         $action = sanitize_text_field(wp_unslash($_POST['static_qr_action']));
-        $slot = sanitize_title(wp_unslash($_POST['slot'] ?? ''));
+        $raw_slot = wp_unslash($_POST['slot'] ?? '');
+        $slot = is_string($raw_slot) ? sanitize_title($raw_slot) : '';
 
-        if ($slot && !in_array($slot, $this->slots(), true)) {
+        if (!in_array($slot, $this->slots(), true)) {
             add_settings_error(self::SLUG, 'invalid_slot', 'Invalid slot.', 'error');
         } else {
             if ($action === 'save_slot') {

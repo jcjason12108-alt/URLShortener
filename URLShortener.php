@@ -3,7 +3,7 @@
  * Plugin Name: URL Shortener
  * Plugin URI: https://github.com/jcjason12108-alt/URLShortener/
  * Description: Creates short branded URLs and static QR redirects from one tabbed admin screen. GitHub: https://github.com/jcjason12108-alt
- * Version: 1.4.5
+ * Version: 1.4.6
  * Author: Jason Cox
  * Requires at least: 5.8
  * Tested up to: 7.0
@@ -21,7 +21,7 @@ require_once __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 require_once __DIR__ . '/StaticQRRedirect.php';
 
 function ius_register_update_checker() {
-    $update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+    $update_checker = \YahnisElsts\PluginUpdateChecker\v6\PucFactory::buildUpdateChecker(
         'https://github.com/jcjason12108-alt/URLShortener/',
         __FILE__,
         'URLShortener'
@@ -49,55 +49,6 @@ global $ius_table, $ius_static_qr;
 $ius_table = $GLOBALS['wpdb']->prefix . 'image_shortener';
 $ius_static_qr = new Static_QR_Redirect();
 $ius_static_qr->register_hooks();
-/**
- * Serve proxied QR images for admin UI to avoid leaking short URLs to third-parties.
- * Accessible via admin-ajax.php?action=ius_qr&slug=...&nonce=...
- */
-add_action('wp_ajax_ius_qr', function () {
-    if (!current_user_can('manage_options')) {
-        wp_die('', '', ['response' => 403]);
-    }
-
-    check_ajax_referer('ius_qr_nonce', 'nonce');
-
-    global $wpdb, $ius_table;
-
-    $slug = isset($_GET['slug']) ? sanitize_text_field(wp_unslash($_GET['slug'])) : '';
-    if (!$slug) {
-        wp_die('', '', ['response' => 400]);
-    }
-
-    $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM $ius_table WHERE slug = %s", $slug));
-    if (!$row) {
-        wp_die('', '', ['response' => 404]);
-    }
-
-    $base = trim((string) $row->base_path) !== '' ? $row->base_path : ius_get_base_path();
-    $short_url = ius_build_short_url($base, $row->slug);
-
-    $qr_api = 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=' . rawurlencode($short_url);
-
-    $response = wp_remote_get($qr_api, ['timeout' => 5, 'sslverify' => true]);
-    if (is_wp_error($response)) {
-        wp_die('', '', ['response' => 502]);
-    }
-
-    $body = wp_remote_retrieve_body($response);
-    $content_type = wp_remote_retrieve_header($response, 'content-type');
-    $allowed_types = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
-    if (!in_array($content_type, $allowed_types, true)) {
-        $content_type = 'image/png';
-    }
-
-    if (!empty($body)) {
-        header('X-Content-Type-Options: nosniff');
-        header('Content-Type: ' . $content_type);
-        echo $body;
-        exit;
-    }
-
-    wp_die('', '', ['response' => 502]);
-});
 
 /* ============================================================================
    BASE PATH HELPERS
@@ -234,6 +185,7 @@ register_activation_hook(__FILE__, function () {
 
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql);
+    ius_maybe_upgrade_schema();
 
     ius_add_rewrite_rule();
     ius_get_static_qr_plugin()->on_activate();
@@ -250,20 +202,28 @@ register_deactivation_hook(__FILE__, function () {
 function ius_maybe_upgrade_schema() {
     global $wpdb, $ius_table;
 
-    $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $ius_table));
-    if (!$table_exists) {
+    if ((int) get_option('ius_schema_version', 0) >= 1) {
+        return;
+    }
+
+    $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->esc_like($ius_table)));
+    if ($table_exists !== $ius_table) {
         return;
     }
 
     $default_base = ius_get_base_path();
-    $wpdb->query(
+    $updated = $wpdb->query(
         $wpdb->prepare(
             "UPDATE $ius_table SET base_path = %s WHERE base_path = '' OR base_path IS NULL",
             $default_base
         )
     );
+
+    if ($updated !== false) {
+        update_option('ius_schema_version', 1, true);
+    }
 }
-add_action('plugins_loaded', 'ius_maybe_upgrade_schema');
+add_action('init', 'ius_maybe_upgrade_schema');
 
 function ius_get_static_qr_plugin() {
     global $ius_static_qr;
@@ -283,6 +243,15 @@ add_action('admin_menu', function () {
         'dashicons-admin-links',
         22
     );
+});
+
+add_action('admin_enqueue_scripts', function ($hook_suffix) {
+    if ($hook_suffix !== 'toplevel_page_image-url-shortener') {
+        return;
+    }
+
+    wp_enqueue_script('ius-qrcode', plugins_url('assets/qrcode.js', __FILE__), [], '2.0.4', true);
+    wp_enqueue_script('ius-admin-qr', plugins_url('assets/admin-qr.js', __FILE__), ['ius-qrcode'], '1.4.6', true);
 });
 
 /* ============================================================================
@@ -675,15 +644,7 @@ function ius_admin_page() {
                 <td style="text-align:center;width:110px;">
                     <?php
                     if ($short_url) {
-                        $qr_src = add_query_arg(
-                            [
-                                'action' => 'ius_qr',
-                                'slug'   => $r->slug,
-                                'nonce'  => wp_create_nonce('ius_qr_nonce'),
-                            ],
-                            admin_url('admin-ajax.php')
-                        );
-                        echo '<img src="' . esc_url($qr_src) . '" alt="QR code for ' . esc_attr($short_url) . '" style="max-width:80px;height:auto;display:block;margin:0 auto;" />';
+                        echo '<canvas class="ius-qr-preview" data-ius-qr-url="' . esc_attr($short_url) . '" width="80" height="80" role="img" aria-label="QR code for ' . esc_attr($short_url) . '" style="max-width:80px;height:auto;display:block;margin:0 auto;"></canvas>';
                     }
                     ?>
                 </td>
@@ -759,12 +720,13 @@ function ius_resolve_short_link($slug) {
 
 // Resolve short links before WordPress sends status headers or the theme loads its 404 styles.
 add_filter('pre_handle_404', function ($preempt, $wp_query) {
-    $slug = sanitize_title($wp_query->get('ius_slug'));
-    if (!$slug) {
+    $requested_slug = $wp_query->get('ius_slug');
+    if ($requested_slug === '' || $requested_slug === false || $requested_slug === null) {
         return $preempt;
     }
 
-    if (!ius_resolve_short_link($slug)) {
+    $slug = is_string($requested_slug) ? sanitize_title($requested_slug) : '';
+    if ($slug === '' || !ius_resolve_short_link($slug)) {
         $wp_query->set_404();
         status_header(404);
         nocache_headers();
@@ -777,14 +739,22 @@ add_filter('pre_handle_404', function ($preempt, $wp_query) {
 
 // WordPress must not guess another destination for an expired or missing short link.
 add_filter('redirect_canonical', function ($redirect_url) {
-    return get_query_var('ius_slug') ? false : $redirect_url;
+    $requested_slug = get_query_var('ius_slug');
+    return ($requested_slug !== '' && $requested_slug !== false && $requested_slug !== null)
+        ? false
+        : $redirect_url;
 });
 
 add_action('template_redirect', function () {
     global $wpdb, $ius_table;
 
-    $slug = sanitize_title(get_query_var('ius_slug'));
-    if (!$slug) {
+    $requested_slug = get_query_var('ius_slug');
+    if (!is_string($requested_slug) || $requested_slug === '') {
+        return;
+    }
+
+    $slug = sanitize_title($requested_slug);
+    if ($slug === '') {
         return;
     }
 
