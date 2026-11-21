@@ -556,9 +556,7 @@ function ius_admin_page() {
         $status_label = 'Active';
     }
 
-    $expires_text = $r->expires_at
-        ? get_date_from_gmt($r->expires_at, 'M j, Y H:i')
-        : 'Never';
+    $expires_text = ius_format_expiration_for_display($r->expires_at);
 ?>
 
             <tr>
