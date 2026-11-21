@@ -4,7 +4,7 @@ Tags: url shortener, qr code, redirects
 Requires at least: 5.8
 Tested up to: 7.1.5
 Requires PHP: 7.4
-Stable tag: 1.4.7
+Stable tag: 1.4.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,11 @@ The Static QR Redirect tab manages fixed QR routes for `/qr`, `/qr2`, `/qr3`, an
 3. Visit `Settings > Permalinks` and click `Save` once after activation.
 
 == Changelog ==
+
+= 1.4.8 =
+* Reject invalid expiration dates instead of clearing them, and interpret valid dates in the site timezone.
+* Fail closed when a stored expiration is damaged and prevent browsers from caching short-link redirects.
+* Reject malformed admin form values before passing them to string sanitizers.
 
 = 1.4.7 =
 * Updated WordPress compatibility metadata to 7.1.5.

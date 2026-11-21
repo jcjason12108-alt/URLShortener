@@ -66,6 +66,9 @@ jobs:
           find . -type f -name '*.php' -not -path './.git/*' -print0 \
             | xargs -0 -n 1 php -l
 
+      - name: Test expiration boundaries
+        run: php tests/expiration-smoke.php
+
       - name: Install PHP compatibility rules
         shell: bash
         run: |

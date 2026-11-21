@@ -1,0 +1,33 @@
+<?php
+/** Smoke tests for expiration boundaries without a WordPress installation. */
+
+define('ABSPATH', __DIR__ . '/');
+
+function wp_timezone() {
+    return new DateTimeZone('America/Los_Angeles');
+}
+
+function get_date_from_gmt($date, $format) {
+    return (new DateTimeImmutable($date, new DateTimeZone('UTC')))
+        ->setTimezone(wp_timezone())
+        ->format($format);
+}
+
+require dirname(__DIR__) . '/Expiration.php';
+
+function expect_same($expected, $actual, $label) {
+    if ($expected !== $actual) {
+        throw new RuntimeException($label . ': expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
+    }
+}
+
+expect_same('2026-11-20 20:30:00', ius_parse_expiration_input('2026-11-20T12:30'), 'site time to UTC');
+expect_same('2026-11-20T12:30', ius_format_datetime_local('2026-11-20 20:30:00'), 'UTC to edit field');
+expect_same(null, ius_parse_expiration_input(''), 'blank means never');
+expect_same(false, ius_parse_expiration_input('not a date'), 'malformed date');
+expect_same(false, ius_parse_expiration_input(['2026-11-20T12:30']), 'array input');
+expect_same(false, ius_parse_expiration_input('2026-03-08T02:30'), 'nonexistent daylight saving time');
+expect_same(true, ius_row_is_expired((object) ['expires_at' => 'broken']), 'damaged stored expiration');
+expect_same(false, ius_row_is_expired((object) ['expires_at' => null]), 'no expiration');
+
+echo "Expiration smoke tests passed.\n";

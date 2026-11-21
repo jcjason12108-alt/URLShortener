@@ -3,7 +3,7 @@
  * Plugin Name: URL Shortener
  * Plugin URI: https://github.com/jcjason12108-alt/URLShortener/
  * Description: Creates short branded URLs and static QR redirects from one tabbed admin screen. GitHub: https://github.com/jcjason12108-alt
- * Version: 1.4.7
+ * Version: 1.4.8
  * Author: Jason Cox
  * Requires at least: 5.8
  * Tested up to: 7.1.5
@@ -19,6 +19,7 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 require_once __DIR__ . '/StaticQRRedirect.php';
+require_once __DIR__ . '/Expiration.php';
 
 function ius_register_update_checker() {
     $update_checker = \YahnisElsts\PluginUpdateChecker\v6\PucFactory::buildUpdateChecker(
@@ -115,7 +116,11 @@ function ius_build_short_url($base_path, $slug) {
 }
 
 function ius_validate_destination_url($url) {
-    $url = esc_url_raw((string) $url);
+    if (!is_string($url)) {
+        return '';
+    }
+
+    $url = esc_url_raw($url);
     if (!$url || !wp_http_validate_url($url)) {
         return '';
     }
@@ -126,32 +131,6 @@ function ius_validate_destination_url($url) {
     }
 
     return $url;
-}
-
-function ius_row_is_expired($row) {
-    if (empty($row->expires_at)) {
-        return false;
-    }
-
-    $timestamp = strtotime($row->expires_at . ' UTC');
-    if ($timestamp === false) {
-        return false;
-    }
-
-    return time() >= $timestamp;
-}
-
-function ius_format_datetime_local($datetime) {
-    if (!$datetime) {
-        return '';
-    }
-
-    $timestamp = strtotime($datetime . ' UTC');
-    if ($timestamp === false) {
-        return '';
-    }
-
-    return gmdate('Y-m-d\TH:i', $timestamp);
 }
 
 function ius_is_reserved_slug($slug) {
@@ -251,7 +230,7 @@ add_action('admin_enqueue_scripts', function ($hook_suffix) {
     }
 
     wp_enqueue_script('ius-qrcode', plugins_url('assets/qrcode.js', __FILE__), [], '2.0.4', true);
-    wp_enqueue_script('ius-admin-qr', plugins_url('assets/admin-qr.js', __FILE__), ['ius-qrcode'], '1.4.7', true);
+    wp_enqueue_script('ius-admin-qr', plugins_url('assets/admin-qr.js', __FILE__), ['ius-qrcode'], '1.4.8', true);
 });
 
 /* ============================================================================
@@ -267,7 +246,8 @@ function ius_admin_page() {
     $base_paths      = ius_get_all_base_paths();
     $base_path       = $base_paths[0];
     $base_paths_text = implode("\n", $base_paths);
-    $current_tab     = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : 'shortener';
+    $raw_tab         = isset($_GET['tab']) ? wp_unslash($_GET['tab']) : 'shortener';
+    $current_tab     = is_string($raw_tab) ? sanitize_key($raw_tab) : 'shortener';
     if (!in_array($current_tab, ['shortener', 'static_qr'], true)) {
         $current_tab = 'shortener';
     }
@@ -307,7 +287,7 @@ function ius_admin_page() {
     ------------------------------ */
     if (isset($_POST['ius_save_settings']) && check_admin_referer('ius_settings_nonce')) {
 
-        if (isset($_POST['base_paths'])) {
+        if (isset($_POST['base_paths']) && is_string($_POST['base_paths'])) {
             $raw   = wp_unslash($_POST['base_paths']);
             $lines = preg_split('/\r\n|\r|\n/', $raw);
 
@@ -354,9 +334,10 @@ function ius_admin_page() {
 
         $raw_original = isset($_POST['original_url']) ? wp_unslash($_POST['original_url']) : '';
         $original     = ius_validate_destination_url($raw_original);
-        $slug         = sanitize_title(wp_unslash($_POST['slug'] ?? ''));
+        $raw_slug     = wp_unslash($_POST['slug'] ?? '');
+        $slug         = is_string($raw_slug) ? sanitize_title($raw_slug) : '';
 
-        $selected_base = isset($_POST['base_path_choice'])
+        $selected_base = isset($_POST['base_path_choice']) && is_string($_POST['base_path_choice'])
             ? sanitize_title(wp_unslash($_POST['base_path_choice']))
             : $base_path;
 
@@ -365,16 +346,11 @@ function ius_admin_page() {
         }
 
         $is_active  = isset($_POST['is_active']) ? 1 : 0;
-        $expires_at = null;
+        $expires_at = ius_parse_expiration_input(wp_unslash($_POST['expires_at'] ?? ''));
 
-        if (!empty($_POST['expires_at'])) {
-            $timestamp = strtotime(sanitize_text_field(wp_unslash($_POST['expires_at'])));
-            if ($timestamp) {
-                $expires_at = gmdate('Y-m-d H:i:s', $timestamp);
-            }
-        }
-
-        if (!$original) {
+        if ($expires_at === false || !is_string($raw_slug)) {
+            echo '<div class="error"><p>Invalid short URL or expiration date. No short URL was created.</p></div>';
+        } elseif (!$original) {
             echo '<div class="error"><p>Original URL must be a valid http or https URL.</p></div>';
         } else {
             // Auto-generate slug
@@ -432,17 +408,14 @@ function ius_admin_page() {
     ------------------------------ */
     if (isset($_POST['ius_update_expiration']) && check_admin_referer('ius_expire_nonce')) {
         $expire_id  = absint(wp_unslash($_POST['expire_id'] ?? 0));
-        $expires_at = null;
+        $expires_at = ius_parse_expiration_input(wp_unslash($_POST['expires_at'] ?? ''));
 
-        if (!empty($_POST['expires_at'])) {
-            $timestamp = strtotime(sanitize_text_field(wp_unslash($_POST['expires_at'])));
-            if ($timestamp) {
-                $expires_at = gmdate('Y-m-d H:i:s', $timestamp);
-            }
+        if ($expires_at === false) {
+            echo '<div class="error"><p>Invalid expiration date. The existing expiration was kept.</p></div>';
+        } else {
+            $wpdb->update($ius_table, ['expires_at' => $expires_at], ['id' => $expire_id]);
+            echo '<div class="updated"><p>Expiration updated.</p></div>';
         }
-
-        $wpdb->update($ius_table, ['expires_at' => $expires_at], ['id' => $expire_id]);
-        echo '<div class="updated"><p>Expiration updated.</p></div>';
     }
 
     /* ------------------------------  
@@ -767,6 +740,7 @@ add_action('template_redirect', function () {
         $wpdb->prepare("UPDATE $ius_table SET hits = hits + 1 WHERE id = %d", $resolved['row']->id)
     );
 
+    nocache_headers();
     wp_redirect($resolved['original'], 302, 'URL Shortener');
     exit;
 });

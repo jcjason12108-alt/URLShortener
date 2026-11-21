@@ -211,7 +211,7 @@ class Static_QR_Redirect {
     public function maybe_handle_post() {
         if (!is_admin() || !current_user_can('manage_options')) return;
         if (empty($_POST['static_qr_action'])) return;
-        $nonce = isset($_POST[self::NONCE_KEY])
+        $nonce = isset($_POST[self::NONCE_KEY]) && is_string($_POST[self::NONCE_KEY])
             ? sanitize_text_field(wp_unslash($_POST[self::NONCE_KEY]))
             : '';
 
@@ -220,7 +220,8 @@ class Static_QR_Redirect {
         }
 
         $slots = get_option(self::OPTION_SLOTS, []);
-        $action = sanitize_text_field(wp_unslash($_POST['static_qr_action']));
+        $raw_action = wp_unslash($_POST['static_qr_action']);
+        $action = is_string($raw_action) ? sanitize_text_field($raw_action) : '';
         $raw_slot = wp_unslash($_POST['slot'] ?? '');
         $slot = is_string($raw_slot) ? sanitize_title($raw_slot) : '';
 
