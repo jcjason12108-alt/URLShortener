@@ -8,7 +8,7 @@ All notable changes to this project will be documented here.
 ## [1.4.8] - 2026-11-20
 ### Fixed
 - Preserve an existing expiration when an admin submits an invalid date, and use the site's timezone for the date editor.
-- Treat damaged stored expiration dates as expired and prevent caching of active short-link redirects.
+- Treat damaged stored expiration dates as expired, display them safely in the admin list, and prevent caching of active short-link redirects.
 - Guard admin form values against malformed array input.
 
 ---

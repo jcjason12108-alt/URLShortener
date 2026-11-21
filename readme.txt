@@ -26,7 +26,7 @@ The Static QR Redirect tab manages fixed QR routes for `/qr`, `/qr2`, `/qr3`, an
 
 = 1.4.8 =
 * Reject invalid expiration dates instead of clearing them, and interpret valid dates in the site timezone.
-* Fail closed when a stored expiration is damaged and prevent browsers from caching short-link redirects.
+* Fail closed and display safely when a stored expiration is damaged; prevent browsers from caching short-link redirects.
 * Reject malformed admin form values before passing them to string sanitizers.
 
 = 1.4.7 =
