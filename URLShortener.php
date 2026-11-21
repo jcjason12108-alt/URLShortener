@@ -3,10 +3,10 @@
  * Plugin Name: URL Shortener
  * Plugin URI: https://github.com/jcjason12108-alt/URLShortener/
  * Description: Creates short branded URLs and static QR redirects from one tabbed admin screen. GitHub: https://github.com/jcjason12108-alt
- * Version: 1.4.6
+ * Version: 1.4.7
  * Author: Jason Cox
  * Requires at least: 5.8
- * Tested up to: 7.0
+ * Tested up to: 7.1.5
  * Requires PHP: 7.4
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -251,7 +251,7 @@ add_action('admin_enqueue_scripts', function ($hook_suffix) {
     }
 
     wp_enqueue_script('ius-qrcode', plugins_url('assets/qrcode.js', __FILE__), [], '2.0.4', true);
-    wp_enqueue_script('ius-admin-qr', plugins_url('assets/admin-qr.js', __FILE__), ['ius-qrcode'], '1.4.6', true);
+    wp_enqueue_script('ius-admin-qr', plugins_url('assets/admin-qr.js', __FILE__), ['ius-qrcode'], '1.4.7', true);
 });
 
 /* ============================================================================

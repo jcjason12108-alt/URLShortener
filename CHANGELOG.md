@@ -5,6 +5,12 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [1.4.7] - 2026-11-20
+### Changed
+- Updated WordPress compatibility metadata to 7.1.5.
+
+---
+
 ## [1.4.6] - 2026-11-20
 ### Changed
 - Updated Plugin Update Checker to 6.0, including Parsedown 1.8.0.
