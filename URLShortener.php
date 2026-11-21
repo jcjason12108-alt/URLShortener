@@ -3,7 +3,7 @@
  * Plugin Name: URL Shortener
  * Plugin URI: https://github.com/jcjason12108-alt/URLShortener/
  * Description: Creates short branded URLs and static QR redirects from one tabbed admin screen. GitHub: https://github.com/jcjason12108-alt
- * Version: 1.4.4
+ * Version: 1.4.5
  * Author: Jason Cox
  * Requires at least: 5.8
  * Tested up to: 7.0
@@ -733,6 +733,53 @@ add_filter('query_vars', function ($vars) {
 /* ============================================================================
    REDIRECT HANDLER
 ============================================================================ */
+function ius_resolve_short_link($slug) {
+    global $wpdb, $ius_table;
+
+    static $resolved = [];
+    if (array_key_exists($slug, $resolved)) {
+        return $resolved[$slug];
+    }
+
+    $row = $wpdb->get_row(
+        $wpdb->prepare("SELECT * FROM $ius_table WHERE slug = %s", $slug)
+    );
+
+    if (!$row || !$row->is_active || ius_row_is_expired($row)) {
+        return $resolved[$slug] = null;
+    }
+
+    $original = ius_validate_destination_url($row->original_url);
+    if (!$original) {
+        return $resolved[$slug] = null;
+    }
+
+    return $resolved[$slug] = ['row' => $row, 'original' => $original];
+}
+
+// Resolve short links before WordPress sends status headers or the theme loads its 404 styles.
+add_filter('pre_handle_404', function ($preempt, $wp_query) {
+    $slug = sanitize_title($wp_query->get('ius_slug'));
+    if (!$slug) {
+        return $preempt;
+    }
+
+    if (!ius_resolve_short_link($slug)) {
+        $wp_query->set_404();
+        status_header(404);
+        nocache_headers();
+    } else {
+        status_header(200);
+    }
+
+    return true;
+}, 10, 2);
+
+// WordPress must not guess another destination for an expired or missing short link.
+add_filter('redirect_canonical', function ($redirect_url) {
+    return get_query_var('ius_slug') ? false : $redirect_url;
+});
+
 add_action('template_redirect', function () {
     global $wpdb, $ius_table;
 
@@ -741,35 +788,15 @@ add_action('template_redirect', function () {
         return;
     }
 
-    $row = $wpdb->get_row(
-        $wpdb->prepare("SELECT * FROM $ius_table WHERE slug = %s", $slug)
-    );
-
-    if ($row) {
-        $expired = ius_row_is_expired($row);
-
-        if (!$row->is_active || $expired) {
-            global $wp_query;
-            $wp_query->set_404();
-            return;
-        }
-
-        // Validate the stored original URL before redirecting
-        $original = ius_validate_destination_url($row->original_url);
-        if (!$original) {
-            global $wp_query;
-            $wp_query->set_404();
-            return;
-        }
-
-        $wpdb->query(
-            $wpdb->prepare("UPDATE $ius_table SET hits = hits + 1 WHERE id = %d", $row->id)
-        );
-
-        wp_redirect($original, 302, 'URL Shortener');
-        exit;
+    $resolved = ius_resolve_short_link($slug);
+    if (!$resolved) {
+        return;
     }
 
-    global $wp_query;
-    $wp_query->set_404();
+    $wpdb->query(
+        $wpdb->prepare("UPDATE $ius_table SET hits = hits + 1 WHERE id = %d", $resolved['row']->id)
+    );
+
+    wp_redirect($resolved['original'], 302, 'URL Shortener');
+    exit;
 });

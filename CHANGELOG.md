@@ -5,6 +5,13 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [1.4.5] - 2026-11-20
+### Fixed
+- Expired, inactive, missing, and invalid short links now return HTTP 404 before the theme selects its 404 assets.
+- Prevented canonical redirects from guessing another destination for unavailable short links.
+
+---
+
 ## [1.4.4] - 2026-08-17
 ### Changed
 - Updated the bundled Plugin Update Checker library from 5.6 to 5.7.
