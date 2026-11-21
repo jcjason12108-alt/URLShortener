@@ -5,6 +5,17 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [1.4.6] - 2026-11-20
+### Changed
+- Updated Plugin Update Checker to 6.0, including Parsedown 1.8.0.
+- Generate QR previews and downloads locally using qrcode-generator 2.0.4 (MIT licensed).
+- Run the legacy base-path migration once and record its completion.
+
+### Fixed
+- Reject malformed public short-link and static QR query values before they can cause PHP errors.
+
+---
+
 ## [1.4.5] - 2026-11-20
 ### Fixed
 - Expired, inactive, missing, and invalid short links now return HTTP 404 before the theme selects its 404 assets.

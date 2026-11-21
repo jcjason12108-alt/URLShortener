@@ -88,3 +88,29 @@ jobs:
             --extensions=php \
             --ignore='*/plugin-update-checker/*' \
             .
+
+  qr_javascript:
+    name: QR JavaScript
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check QR scripts and encoding
+        run: |
+          node --check assets/qrcode.js
+          node --check assets/admin-qr.js
+          node - <<'JS'
+          const qrcode = require('./assets/qrcode.js');
+          const code = qrcode(0, 'M');
+          code.addData('https://www.iamll706.org/go/bylaws');
+          code.make();
+          if (code.getModuleCount() < 21 || !code.isDark(0, 0)) {
+            throw new Error('QR generator failed to encode a short URL');
+          }
+          JS
